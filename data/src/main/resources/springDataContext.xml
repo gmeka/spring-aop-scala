@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:transaction="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+  <bean id="entityManagerFactory" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+    <property name="dataSource">
+      <bean class="com.atomikos.jdbc.AtomikosDataSourceBean" init-method="init" destroy-method="close">
+        <property name="uniqueResourceName" value="dataSource"/>
+        <property name="xaDataSource">
+          <bean class="org.h2.jdbcx.JdbcDataSource" lazy-init="true">
+            <property name="password" value=""/>
+            <property name="url" value="jdbc:h2:mem:company"/>
+            <property name="user" value="sa"/>
+          </bean>
+        </property>
+        <property name="borrowConnectionTimeout" value="3000"/>
+        <property name="defaultIsolationLevel" value="2"/>
+        <property name="maxPoolSize" value="5"/>
+        <property name="minPoolSize" value="1"/>
+      </bean>
+    </property>
+    <property name="jpaProperties">
+      <props>
+        <prop key="hibernate.transaction.jta.platform">com.atomikos.icatch.jta.hibernate4.AtomikosPlatform</prop>
+      </props>
+    </property>
+    <property name="jpaVendorAdapter">
+      <bean id="hibernateJpaAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+        <property name="databasePlatform" value="org.hibernate.dialect.H2Dialect"/>
+        <property name="generateDdl" value="true"/>
+        <property name="showSql" value="true"/>
+      </bean>
+    </property>
+    <property name="packagesToScan" value="org.example.domain"/>
+  </bean>
+
+  <bean class="org.springframework.transaction.jta.JtaTransactionManager" id="transactionManager">
+    <property name="transactionManager">
+      <bean class="com.atomikos.icatch.jta.UserTransactionManager" init-method="init" destroy-method="close">
+        <property name="forceShutdown" value="false"/>
+      </bean>
+    </property>
+    <property name="userTransaction">
+      <bean class="com.atomikos.icatch.jta.J2eeUserTransaction">
+        <property name="transactionTimeout" value="300"/>
+      </bean>
+    </property>
+    <property name="allowCustomIsolationLevels" value="true"/>
+  </bean>
+
+  <context:annotation-config/>
+  <context:component-scan base-package="org.example.data"/>
+
+  <jpa:repositories base-package="org.example.data"/>
+
+  <transaction:annotation-driven/>
+</beans>
